@@ -63,29 +63,29 @@ bool initialize_thread_ctx(struct thread_context *ctx, int offset, size_t total)
  */
 static int compare(const void *p1, const void *p2)
 {
-   hrtime_t a = *((hrtime_t *)p1);
-   hrtime_t b = *((hrtime_t *)p2);
+    hrtime_t a = *((hrtime_t *)p1);
+    hrtime_t b = *((hrtime_t *)p2);
 
-   if (a < b) {
-      return -1;
-   } else if (a > b) {
-      return 1;
-   } else {
-      return 0;
-   }
+    if (a < b) {
+        return -1;
+    } else if (a > b) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 /**
  * External interface
  */
-void record_tx(enum TxnType tx_type, hrtime_t tx_time, struct thread_context *ctx) {
+void record_tx(enum TxnType tx_type, hrtime_t tx_time, struct thread_context *ctx)
+{
     assert(tx_type < (TX_CAS - TX_GET));
     ctx->tx[tx_type].set[ctx->tx[tx_type].current++] = tx_time;
 }
 
 struct ResultMetrics *calc_metrics(enum TxnType tx_type,
-                                   struct thread_context *ctx)
-{
+                                   struct thread_context *ctx) {
     struct ResultMetrics *ret = calloc(1, sizeof(*ret));
     if (ret == NULL) {
         return NULL;
@@ -99,9 +99,9 @@ struct ResultMetrics *calc_metrics(enum TxnType tx_type,
     qsort(sample->set, sample->current, sizeof(hrtime_t), compare);
 
     ret->success_count = sample->current ;
-    long percentile90 = (0.9) * (float) (ret->success_count - 1) + 1.0;
-    long percentile95 = (0.95) * (float) (ret->success_count - 1) + 1.0;
-    long percentile99 = (0.99) * (float) (ret->success_count - 1) + 1.0;
+    long percentile90 = (0.9) *(float)(ret->success_count - 1) + 1.0;
+    long percentile95 = (0.95) *(float)(ret->success_count - 1) + 1.0;
+    long percentile99 = (0.99) *(float)(ret->success_count - 1) + 1.0;
 
     ret->max90th_result = sample->set[percentile90];
     ret->max95th_result = sample->set[percentile95];
@@ -126,9 +126,10 @@ struct ResultMetrics *calc_metrics(enum TxnType tx_type,
  * @param size the size of the buffer
  * @return buffer
  */
-static const char* hrtime2text(hrtime_t t, char *buffer, size_t size) {
-    static const char * const extensions[] = {"s", "ms", "us", "ns"}; //TODO: get a greek Mu in here correctly
-    int id = sizeof(extensions)/sizeof(extensions[0]) - 1;
+static const char *hrtime2text(hrtime_t t, char *buffer, size_t size)
+{
+    static const char *const extensions[] = {"s", "ms", "us", "ns"};  //TODO: get a greek Mu in here correctly
+    int id = sizeof(extensions) / sizeof(extensions[0]) - 1;
 
     while (t > 9999 && id > 0) {
         id--;
@@ -139,14 +140,16 @@ static const char* hrtime2text(hrtime_t t, char *buffer, size_t size) {
     return buffer;
 }
 
-static void print_details(enum TxnType tx_type, struct ResultMetrics *r) {
-    static const char * txt[] = { [TX_GET] = "Get",
-                                   [TX_SET] = "Set",
-                                   [TX_ADD] = "Add",
-                                   [TX_REPLACE] = "Replace",
-                                   [TX_APPEND] = "Append",
-                                   [TX_PREPEND] = "Prepend",
-                                   [TX_CAS] = "Cas" };
+static void print_details(enum TxnType tx_type, struct ResultMetrics *r)
+{
+    static const char *txt[] = { [TX_GET] = "Get",
+                                 [TX_SET] = "Set",
+                                 [TX_ADD] = "Add",
+                                 [TX_REPLACE] = "Replace",
+                                 [TX_APPEND] = "Append",
+                                 [TX_PREPEND] = "Prepend",
+                                 [TX_CAS] = "Cas"
+                               };
 
 
     printf("%s operations:\n", txt[tx_type]);
@@ -158,15 +161,16 @@ static void print_details(enum TxnType tx_type, struct ResultMetrics *r) {
     char tmax99[80];
     printf("     #of ops.       min       max       avg   max90th   max95th   max99th\n");
     printf("%13ld%10.10s%10.10s%10.10s%10.10s%10.10s%10.10s\n\n", r->success_count,
-           hrtime2text(r->min_result, tmin, sizeof (tmin)),
-           hrtime2text(r->max_result, tmax, sizeof (tmax)),
+           hrtime2text(r->min_result, tmin, sizeof(tmin)),
+           hrtime2text(r->max_result, tmax, sizeof(tmax)),
            hrtime2text(r->average, tavg, sizeof(tavg)),
            hrtime2text(r->max90th_result, tmax90, sizeof(tmax90)),
            hrtime2text(r->max95th_result, tmax95, sizeof(tmax95)),
            hrtime2text(r->max99th_result, tmax99, sizeof(tmax99)));
 }
 
-void print_metrics(struct thread_context *ctx) {
+void print_metrics(struct thread_context *ctx)
+{
     for (int ii = 0; ii < TX_CAS - TX_GET; ++ii) {
         if (ctx->tx[ii].current > 0) {
             struct ResultMetrics *r = calc_metrics(ii, ctx);

@@ -186,8 +186,11 @@ static void storage_callback(libcouchbase_t instance,
                              const void *key, size_t nkey,
                              uint64_t cas)
 {
-    (void)instance; (void)operation; (void)key;
-    (void)nkey; (void)cas;
+    (void)instance;
+    (void)operation;
+    (void)key;
+    (void)nkey;
+    (void)cas;
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
@@ -200,7 +203,10 @@ static void get_callback(libcouchbase_t instance,
                          const void *bytes, size_t nbytes,
                          uint32_t flags, uint64_t cas)
 {
-    (void)key; (void)nkey; (void)flags; (void)cas;
+    (void)key;
+    (void)nkey;
+    (void)flags;
+    (void)cas;
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
@@ -215,98 +221,94 @@ static void get_callback(libcouchbase_t instance,
 /**
  * Create a handle to a memcached library
  */
-static void *create_memcached_handle(void) {
-    struct memcachelib* ret = malloc(sizeof(*ret));
+static void *create_memcached_handle(void)
+{
+    struct memcachelib *ret = malloc(sizeof(*ret));
     ret->type = current_memcached_library;
 
     switch (current_memcached_library) {
 #ifdef HAVE_LIBMEMCACHED
-    case LIBMEMCACHED_TEXTUAL:
-        {
-            memcached_st *memc = memcached_create(NULL);
-            for (struct host *host = hosts; host != NULL; host = host->next) {
-                memcached_server_add(memc, host->hostname, host->port);
-                if (!use_multiple_servers) {
-                    break;
-                }
+    case LIBMEMCACHED_TEXTUAL: {
+        memcached_st *memc = memcached_create(NULL);
+        for (struct host *host = hosts; host != NULL; host = host->next) {
+            memcached_server_add(memc, host->hostname, host->port);
+            if (!use_multiple_servers) {
+                break;
             }
-            ret->handle = memc;
         }
-        break;
-    case LIBMEMCACHED_BINARY:
-        {
-            memcached_st *memc = memcached_create(NULL);
-            memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
-            for (struct host *host = hosts; host != NULL; host = host->next) {
-                memcached_server_add(memc, host->hostname, host->port);
-                if (!use_multiple_servers) {
-                    break;
-                }
+        ret->handle = memc;
+    }
+    break;
+    case LIBMEMCACHED_BINARY: {
+        memcached_st *memc = memcached_create(NULL);
+        memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
+        for (struct host *host = hosts; host != NULL; host = host->next) {
+            memcached_server_add(memc, host->hostname, host->port);
+            if (!use_multiple_servers) {
+                break;
             }
-            ret->handle = memc;
         }
-        break;
+        ret->handle = memc;
+    }
+    break;
 #endif
 
 #ifdef HAVE_LIBCOUCHBASE
-    case LIBCOUCHBASE:
-        {
-            struct event_base *evbase = event_base_new();
-            if (evbase == NULL) {
-                fprintf(stderr, "Failed to create event base\n");
-                exit(1);
-            }
-
-            char rest_server[1024];
-            sprintf(rest_server, "%s:%d", hosts->hostname, hosts->port);
-            libcouchbase_t instance = libcouchbase_create(rest_server,
-                                                          NULL, NULL, NULL,
-                                                          NULL);
-            if (instance == NULL) {
-                fprintf(stderr, "Failed to create libcouchbase instance\n");
-                event_base_free(evbase);
-                exit(1);
-            }
-
-            if (libcouchbase_connect(instance) != LIBCOUCHBASE_SUCCESS) {
-                fprintf(stderr, "Failed to connect libcouchbase instance to server\n");
-                event_base_free(evbase);
-                exit(1);
-            }
-
-            libcouchbase_wait(instance);
-            (void)libcouchbase_set_storage_callback(instance, storage_callback);
-            (void)libcouchbase_set_get_callback(instance, get_callback);
-
-            ret->handle = instance;
+    case LIBCOUCHBASE: {
+        struct event_base *evbase = event_base_new();
+        if (evbase == NULL) {
+            fprintf(stderr, "Failed to create event base\n");
+            exit(1);
         }
-        break;
+
+        char rest_server[1024];
+        sprintf(rest_server, "%s:%d", hosts->hostname, hosts->port);
+        libcouchbase_t instance = libcouchbase_create(rest_server,
+                                                      NULL, NULL, NULL,
+                                                      NULL);
+        if (instance == NULL) {
+            fprintf(stderr, "Failed to create libcouchbase instance\n");
+            event_base_free(evbase);
+            exit(1);
+        }
+
+        if (libcouchbase_connect(instance) != LIBCOUCHBASE_SUCCESS) {
+            fprintf(stderr, "Failed to connect libcouchbase instance to server\n");
+            event_base_free(evbase);
+            exit(1);
+        }
+
+        libcouchbase_wait(instance);
+        (void)libcouchbase_set_storage_callback(instance, storage_callback);
+        (void)libcouchbase_set_get_callback(instance, get_callback);
+
+        ret->handle = instance;
+    }
+    break;
 #endif
 
-    case LIBMEMC_TEXTUAL:
-        {
-            struct Memcache* memcache = libmemc_create(Textual);
-            for (struct host *host = hosts; host != NULL; host = host->next) {
-                libmemc_add_server(memcache, host->hostname, host->port);
-                if (!use_multiple_servers) {
-                    break;
-                }
+    case LIBMEMC_TEXTUAL: {
+        struct Memcache *memcache = libmemc_create(Textual);
+        for (struct host *host = hosts; host != NULL; host = host->next) {
+            libmemc_add_server(memcache, host->hostname, host->port);
+            if (!use_multiple_servers) {
+                break;
             }
-            ret->handle = memcache;
         }
-        break;
-    case LIBMEMC_BINARY:
-        {
-            struct Memcache* memcache = libmemc_create(Binary);
-            for (struct host *host = hosts; host != NULL; host = host->next) {
-                libmemc_add_server(memcache, host->hostname, host->port);
-                if (!use_multiple_servers) {
-                    break;
-                }
+        ret->handle = memcache;
+    }
+    break;
+    case LIBMEMC_BINARY: {
+        struct Memcache *memcache = libmemc_create(Binary);
+        for (struct host *host = hosts; host != NULL; host = host->next) {
+            libmemc_add_server(memcache, host->hostname, host->port);
+            if (!use_multiple_servers) {
+                break;
             }
-            ret->handle = memcache;
         }
-        break;
+        ret->handle = memcache;
+    }
+    break;
     default:
         abort();
     }
@@ -317,17 +319,17 @@ static void *create_memcached_handle(void) {
 /**
  * Release a handle to a memcached library
  */
-static void release_memcached_handle(void *handle) {
-    struct memcachelib* lib = (struct memcachelib*)handle;
+static void release_memcached_handle(void *handle)
+{
+    struct memcachelib *lib = (struct memcachelib *)handle;
     switch (lib->type) {
 #ifdef HAVE_LIBMEMCACHED
     case LIBMEMCACHED_BINARY: /* FALLTHROUGH */
-    case LIBMEMCACHED_TEXTUAL:
-        {
-            memcached_st *memc = lib->handle;
-            memcached_free(memc);
-        }
-        break;
+    case LIBMEMCACHED_TEXTUAL: {
+        memcached_st *memc = lib->handle;
+        memcached_free(memc);
+    }
+    break;
 #endif
 
 #ifdef HAVE_LIBCOUCHBASE
@@ -358,54 +360,52 @@ static void release_memcached_handle(void *handle) {
  */
 static inline int memcached_set_wrapper(struct connection *connection,
                                         const char *key, int nkey,
-                                        const void *data, int size) {
+                                        const void *data, int size)
+{
 
-    struct memcachelib* lib = (struct memcachelib*)connection->handle;
+    struct memcachelib *lib = (struct memcachelib *)connection->handle;
     switch (lib->type) {
 #ifdef HAVE_LIBMEMCACHED
     case LIBMEMCACHED_BINARY: /* FALLTHROUGH */
-    case LIBMEMCACHED_TEXTUAL:
-        {
-            int rc = memcached_set(lib->handle, key, nkey, data, size, 0, 0);
-            if (rc != MEMCACHED_SUCCESS) {
-                return -1;
-            }
+    case LIBMEMCACHED_TEXTUAL: {
+        int rc = memcached_set(lib->handle, key, nkey, data, size, 0, 0);
+        if (rc != MEMCACHED_SUCCESS) {
+            return -1;
         }
-        break;
+    }
+    break;
 #endif
 
 #ifdef HAVE_LIBCOUCHBASE
-    case LIBCOUCHBASE:
-        {
-            libcouchbase_t instance = lib->handle;
-            libcouchbase_error_t e;
-            struct libcouchbase_callback cb;
-            e = libcouchbase_store(instance, &cb, LIBCOUCHBASE_SET, key,
-                                   nkey, data, size, 0, 0, 0);
-            assert(e == LIBCOUCHBASE_SUCCESS);
-            libcouchbase_wait(instance);
-            if (cb.error != LIBCOUCHBASE_SUCCESS) {
-                return -1;
-            }
+    case LIBCOUCHBASE: {
+        libcouchbase_t instance = lib->handle;
+        libcouchbase_error_t e;
+        struct libcouchbase_callback cb;
+        e = libcouchbase_store(instance, &cb, LIBCOUCHBASE_SET, key,
+                               nkey, data, size, 0, 0, 0);
+        assert(e == LIBCOUCHBASE_SUCCESS);
+        libcouchbase_wait(instance);
+        if (cb.error != LIBCOUCHBASE_SUCCESS) {
+            return -1;
         }
-        break;
+    }
+    break;
 #endif
 
     case LIBMEMC_BINARY:
-    case LIBMEMC_TEXTUAL:
-        {
-            struct Item mitem = {
-                .key = key,
-                .keylen = nkey,
-                /* Set will not modify data */
-                .data = (void*)data,
-                .size = size
-            };
-            if (libmemc_set(lib->handle, &mitem) != 0) {
-                return -1;
-            }
+    case LIBMEMC_TEXTUAL: {
+        struct Item mitem = {
+            .key = key,
+            .keylen = nkey,
+            /* Set will not modify data */
+            .data = (void *)data,
+            .size = size
+        };
+        if (libmemc_set(lib->handle, &mitem) != 0) {
+            return -1;
         }
-        break;
+    }
+    break;
 
     default:
         abort();
@@ -423,64 +423,62 @@ static inline int memcached_set_wrapper(struct connection *connection,
  * @return pointer to the data on success, -1 otherwise
  * TODO: the return of -1 isn't really true
  */
-static inline bool memcached_get_wrapper(struct connection* connection,
-                                          const char *key, int nkey,
-                                          size_t *size, void **data) {
-    struct memcachelib* lib = (struct memcachelib*)connection->handle;
+static inline bool memcached_get_wrapper(struct connection *connection,
+                                         const char *key, int nkey,
+                                         size_t *size, void **data)
+{
+    struct memcachelib *lib = (struct memcachelib *)connection->handle;
     switch (lib->type) {
 #ifdef HAVE_LIBMEMCACHED
     case LIBMEMCACHED_BINARY: /* FALLTHROUGH */
-    case LIBMEMCACHED_TEXTUAL:
-        {
-            memcached_return rc;
-            uint32_t flags;
-            *data = memcached_get(lib->handle, key, nkey, size, &flags, &rc);
-            if (rc != MEMCACHED_SUCCESS) {
-                return false;
-            }
+    case LIBMEMCACHED_TEXTUAL: {
+        memcached_return rc;
+        uint32_t flags;
+        *data = memcached_get(lib->handle, key, nkey, size, &flags, &rc);
+        if (rc != MEMCACHED_SUCCESS) {
+            return false;
         }
-        break;
+    }
+    break;
 #endif
 
 #ifdef HAVE_LIBCOUCHBASE
-    case LIBCOUCHBASE:
-        {
-            libcouchbase_t instance = lib->handle;
-            libcouchbase_error_t e;
-            struct libcouchbase_callback cb;
-            char* keys[1];
-            keys[0] = key;
-            size_t nkeys[1];
-            nkeys[0] = nkey;
+    case LIBCOUCHBASE: {
+        libcouchbase_t instance = lib->handle;
+        libcouchbase_error_t e;
+        struct libcouchbase_callback cb;
+        char *keys[1];
+        keys[0] = key;
+        size_t nkeys[1];
+        nkeys[0] = nkey;
 
-            e = libcouchbase_mget(instance, &cb, 1,
-                                  (const void * const *)keys, nkeys, NULL);
-            assert(e == LIBCOUCHBASE_SUCCESS);
-            libcouchbase_wait(instance);
-            if (cb.error != LIBCOUCHBASE_SUCCESS) {
-                return false;
-            }
-            *size = cb.size;
-            *data = cb.data;
+        e = libcouchbase_mget(instance, &cb, 1,
+                              (const void * const *)keys, nkeys, NULL);
+        assert(e == LIBCOUCHBASE_SUCCESS);
+        libcouchbase_wait(instance);
+        if (cb.error != LIBCOUCHBASE_SUCCESS) {
+            return false;
         }
-        break;
+        *size = cb.size;
+        *data = cb.data;
+    }
+    break;
 #endif
 
     case LIBMEMC_BINARY:
-    case LIBMEMC_TEXTUAL:
-        {
-            struct Item mitem = {
-                .key = key,
-                .keylen = nkey
-            };
+    case LIBMEMC_TEXTUAL: {
+        struct Item mitem = {
+            .key = key,
+            .keylen = nkey
+        };
 
-            if (libmemc_get(lib->handle, &mitem) != 0) {
-                return false;
-            }
-            *size = mitem.size;
-            *data = mitem.data;
+        if (libmemc_get(lib->handle, &mitem) != 0) {
+            return false;
         }
-        break;
+        *size = mitem.size;
+        *data = mitem.data;
+    }
+    break;
 
     default:
         abort();
@@ -490,11 +488,12 @@ static inline bool memcached_get_wrapper(struct connection* connection,
     return true;
 }
 
-static struct connection* connectionpool;
+static struct connection *connectionpool;
 static size_t connection_pool_size = 1;
 static int thread_bind_connection = 0;
 
-static int create_connection_pool(void) {
+static int create_connection_pool(void)
+{
     connectionpool = calloc(connection_pool_size, sizeof(struct connection));
     if (connectionpool == NULL) {
         return -1;
@@ -511,7 +510,8 @@ static int create_connection_pool(void) {
     return 0;
 }
 
-static void destroy_connection_pool(void) {
+static void destroy_connection_pool(void)
+{
     for (size_t ii = 0; ii < connection_pool_size; ++ii) {
         pthread_mutex_destroy(&connectionpool[ii].mutex);
         release_memcached_handle(connectionpool[ii].handle);
@@ -538,7 +538,8 @@ static struct connection *get_connection(void) {
     }
 }
 
-static void release_connection(struct connection *connection) {
+static void release_connection(struct connection *connection)
+{
     pthread_mutex_unlock(&connection->mutex);
 }
 
@@ -549,7 +550,8 @@ static void release_connection(struct connection *connection) {
  * @param size the size of the buffer
  * @return buffer
  */
-static const char* timeval2text(struct timeval* val, char *buffer, size_t size) {
+static const char *timeval2text(struct timeval *val, char *buffer, size_t size)
+{
     snprintf(buffer, size, "%2ld.%06lu", (long)val->tv_sec,
              (long)val->tv_usec);
 
@@ -560,7 +562,8 @@ static const char* timeval2text(struct timeval* val, char *buffer, size_t size) 
  * Initialize the dataset to work on
  * @return 0 if success, -1 if memory allocation fails
  */
-static int initialize_dataset(void) {
+static int initialize_dataset(void)
+{
     uint64_t total = 0;
 
     if (datablock.data != NULL) {
@@ -599,7 +602,7 @@ static int initialize_dataset(void) {
             dataset[ii] = datablock.size;
         } else {
             dataset[ii] = datablock.min_size +
-                (random() % (datablock.size - datablock.min_size));
+                          (random() % (datablock.size - datablock.min_size));
             assert(dataset[ii] >= datablock.min_size);
             assert(dataset[ii] <= datablock.size);
         }
@@ -615,8 +618,9 @@ static int initialize_dataset(void) {
  * Populate the dataset to the server
  * @return 0 if success, -1 if an error occurs
  */
-static int populate_dataset(struct thread_context *ctx) {
-    struct connection* connection = get_connection();
+static int populate_dataset(struct thread_context *ctx)
+{
+    struct connection *connection = get_connection();
     int end = ctx->offset + ctx->total;
     char key[256];
     size_t nkey;
@@ -647,8 +651,9 @@ static int populate_dataset(struct thread_context *ctx) {
  *            the result
  * @return arg
  */
-static void *populate_thread_main(void* arg) {
-    if (populate_dataset((struct thread_context*)arg) == 0) {
+static void *populate_thread_main(void *arg)
+{
+    if (populate_dataset((struct thread_context *)arg) == 0) {
         return arg;
     } else {
         return NULL;
@@ -660,7 +665,8 @@ static void *populate_thread_main(void* arg) {
  * @param no_threads the number of theads to use
  * @return 0 if success, -1 otherwise
  */
-static int populate_data(int no_threads) {
+static int populate_data(int no_threads)
+{
     int ret = 0;
     pthread_t *threads = calloc(sizeof(pthread_t), no_threads);
     struct thread_context *ctx = calloc(sizeof(struct thread_context), no_threads);
@@ -706,7 +712,8 @@ static int populate_data(int no_threads) {
 }
 
 
-static int get_setval(void) {
+static int get_setval(void)
+{
     return random() % no_items;
 }
 
@@ -715,9 +722,10 @@ static int get_setval(void) {
  * @param rep Where to store the result of the test
  * @return 0 on success, -1 otherwise
  */
-static int test(struct thread_context *ctx) {
+static int test(struct thread_context *ctx)
+{
     int ret = 0;
-    struct connection* connection;
+    struct connection *connection;
     char key[256];
     size_t nkey;
     for (size_t ii = 0; ii < ctx->total; ++ii) {
@@ -776,8 +784,9 @@ static int test(struct thread_context *ctx) {
  *            the result
  * @return arg
  */
-static void *test_thread_main(void* arg) {
-    test((struct thread_context*)arg);
+static void *test_thread_main(void *arg)
+{
+    test((struct thread_context *)arg);
     return arg;
 }
 
@@ -785,7 +794,8 @@ static void *test_thread_main(void* arg) {
  * Add a host into the list of memcached servers to use
  * @param hostname the hostname:port to connect to
  */
-static void add_host(const char *hostname) {
+static void add_host(const char *hostname)
+{
     struct host *entry = malloc(sizeof(struct host));
     if (entry == 0) {
         fprintf(stderr, "Failed to allocate memory for <%s>. Host ignored\n",
@@ -808,10 +818,11 @@ static void add_host(const char *hostname) {
 static struct addrinfo *lookuphost(const char *hostname, in_port_t port) {
     struct addrinfo *ai = 0;
     struct addrinfo hints = {
-        .ai_flags = AI_PASSIVE|AI_ADDRCONFIG,
+        .ai_flags = AI_PASSIVE | AI_ADDRCONFIG,
         .ai_family = AF_UNSPEC,
         .ai_protocol = IPPROTO_TCP,
-        .ai_socktype = SOCK_STREAM };
+        .ai_socktype = SOCK_STREAM
+    };
     char service[NI_MAXSERV];
     int error;
 
@@ -827,63 +838,63 @@ static struct addrinfo *lookuphost(const char *hostname, in_port_t port) {
     return ai;
 }
 
-static int get_server_rusage(const struct host *entry, struct rusage *rusage) {
+static int get_server_rusage(const struct host *entry, struct rusage *rusage)
+{
     int ret = -1;
     switch (current_memcached_library) {
-    case LIBMEMC_TEXTUAL:
-        {
-            int sock;
-            char buffer[8192];
-            struct addrinfo* addrinfo = lookuphost(entry->hostname, entry->port);
-            if (addrinfo == NULL) {
-                return -1;
-            }
+    case LIBMEMC_TEXTUAL: {
+        int sock;
+        char buffer[8192];
+        struct addrinfo *addrinfo = lookuphost(entry->hostname, entry->port);
+        if (addrinfo == NULL) {
+            return -1;
+        }
 
-            memset(rusage, 0, sizeof(*rusage));
+        memset(rusage, 0, sizeof(*rusage));
 
-            if ((sock = socket(addrinfo->ai_family,
-                               addrinfo->ai_socktype,
-                               addrinfo->ai_protocol)) != -1) {
-                if (connect(sock, addrinfo->ai_addr, addrinfo->ai_addrlen) != -1) {
-                    if (send(sock, "stats\r\n", 7, 0) > 0) {
-                        if (recv(sock, buffer, sizeof(buffer), 0) > 0) {
-                            char *ptr = strstr(buffer, "rusage_user");
+        if ((sock = socket(addrinfo->ai_family,
+                           addrinfo->ai_socktype,
+                           addrinfo->ai_protocol)) != -1) {
+            if (connect(sock, addrinfo->ai_addr, addrinfo->ai_addrlen) != -1) {
+                if (send(sock, "stats\r\n", 7, 0) > 0) {
+                    if (recv(sock, buffer, sizeof(buffer), 0) > 0) {
+                        char *ptr = strstr(buffer, "rusage_user");
+                        if (ptr != NULL) {
+                            rusage->ru_utime.tv_sec = atoi(ptr + 12);
+                            ptr = strchr(ptr, '.');
                             if (ptr != NULL) {
-                                rusage->ru_utime.tv_sec = atoi(ptr + 12);
-                                ptr = strchr(ptr, '.');
-                                if (ptr != NULL) {
-                                    rusage->ru_utime.tv_usec = atoi(ptr + 1);
-                                }
+                                rusage->ru_utime.tv_usec = atoi(ptr + 1);
                             }
-
-                            ptr = strstr(buffer, "rusage_system");
-                            if (ptr != NULL) {
-                                rusage->ru_stime.tv_sec = atoi(ptr + 14);
-
-                                ptr = strchr(ptr, '.');
-                                if (ptr != NULL) {
-                                    rusage->ru_stime.tv_usec = atoi(ptr + 1);
-                                }
-                            }
-                            ret = 0;
-                        } else {
-                            fprintf(stderr, "Failed to read data: %s\n", strerror(errno));
                         }
+
+                        ptr = strstr(buffer, "rusage_system");
+                        if (ptr != NULL) {
+                            rusage->ru_stime.tv_sec = atoi(ptr + 14);
+
+                            ptr = strchr(ptr, '.');
+                            if (ptr != NULL) {
+                                rusage->ru_stime.tv_usec = atoi(ptr + 1);
+                            }
+                        }
+                        ret = 0;
                     } else {
-                        fprintf(stderr, "Failed to send data: %s\n", strerror(errno));
+                        fprintf(stderr, "Failed to read data: %s\n", strerror(errno));
                     }
                 } else {
-                    fprintf(stderr, "Failed to connect socket: %s\n", strerror(errno));
+                    fprintf(stderr, "Failed to send data: %s\n", strerror(errno));
                 }
-
-                close(sock);
             } else {
-                fprintf(stderr, "Failed to create socket: %s\n", strerror(errno));
+                fprintf(stderr, "Failed to connect socket: %s\n", strerror(errno));
             }
 
-            freeaddrinfo(addrinfo);
+            close(sock);
+        } else {
+            fprintf(stderr, "Failed to create socket: %s\n", strerror(errno));
         }
-        break;
+
+        freeaddrinfo(addrinfo);
+    }
+    break;
     default:
         break;
     }
@@ -894,7 +905,7 @@ static void exit_handler(int signum)
 {
     long end_time = (int)time(NULL);
     long time_taken = end_time - start_time;
-    long ops_sec = ((float)gets_count+sets_count) / time_taken;
+    long ops_sec = ((float)gets_count + sets_count) / time_taken;
     printf("\n\ngets: %ld, sets: %ld, time: %ld, ops/sec: %ld\n",
            gets_count, sets_count, time_taken, ops_sec);
     exit(0);
@@ -906,7 +917,8 @@ static void exit_handler(int signum)
  * @param argv argument vector
  * @return 0 on success, 1 otherwise
  */
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int cmd;
     int no_threads = 1;
     int populate = 1;
@@ -945,48 +957,60 @@ int main(int argc, char **argv) {
             break;
         case 'M':
             size = atoi(optarg);
-            if (size > 1024 * 1024 *20) {
+            if (size > 1024 * 1024 * 20) {
                 fprintf(stderr, "WARNING: Too big block size %d\n", size);
             } else {
                 datablock.size = size;
             }
             break;
-        case 'F': use_fixed_block_size = 1;
+        case 'F':
+            use_fixed_block_size = 1;
             break;
-        case 'h': add_host(optarg);
+        case 'h':
+            add_host(optarg);
             break;
-        case 'T': runtime_limit = atol(optarg);
-	        break;
-        case 'i': no_items = atoi(optarg);
+        case 'T':
+            runtime_limit = atol(optarg);
             break;
-        case 's': srand(atoi(optarg));
+        case 'i':
+            no_items = atoi(optarg);
             break;
-        case 'r': random_value = atoi(optarg);
+        case 's':
+            srand(atoi(optarg));
             break;
-        case 'c': no_iterations = atoll(optarg);
+        case 'r':
+            random_value = atoi(optarg);
             break;
-        case 'V': verify_data = 1;
+        case 'c':
+            no_iterations = atoll(optarg);
             break;
-        case 'l': loop = 1;
+        case 'V':
+            verify_data = 1;
             break;
-        case 'S': populate = 0;
+        case 'l':
+            loop = 1;
             break;
-        case 'v': verbose = 1;
+        case 'S':
+            populate = 0;
             break;
-        case 'W': connection_pool_size = atoi(optarg);
+        case 'v':
+            verbose = 1;
             break;
-        case 'Q': thread_bind_connection = 1;
+        case 'W':
+            connection_pool_size = atoi(optarg);
             break;
-        case 'm':
-            {
-                size = atoi(optarg);
-                if (size > 1024 * 1024) {
-                    fprintf(stderr, "WARNING: Too big block size %d\n", size);
-                } else {
-                    datablock.min_size = size;
-                }
+        case 'Q':
+            thread_bind_connection = 1;
+            break;
+        case 'm': {
+            size = atoi(optarg);
+            if (size > 1024 * 1024) {
+                fprintf(stderr, "WARNING: Too big block size %d\n", size);
+            } else {
+                datablock.min_size = size;
             }
-            break;
+        }
+        break;
         case 'C':
 #ifndef HAVE_LIBVBUCKET
             fprintf(stderr, "You need to rebuild memcachetest with libvbucket\n");
@@ -1081,7 +1105,7 @@ int main(int argc, char **argv) {
         signal(SIGINT, exit_handler);
         start_time = (int)time(NULL);
         if (runtime_limit > 0) {
-	        alarm(runtime_limit);
+            alarm(runtime_limit);
         }
     }
     size_t nget = 0;
@@ -1111,7 +1135,7 @@ int main(int argc, char **argv) {
             for (ii = 0; ii < no_threads; ++ii) {
                 void *ret;
                 pthread_join(threads[ii], &ret);
-                assert(ret == (void*)&ctx[ii]);
+                assert(ret == (void *)&ctx[ii]);
                 if (verbose) {
                     fprintf(stdout, "Details from thread %d\n", ii);
                     print_metrics(&ctx[ii]);
@@ -1160,8 +1184,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    fprintf(stdout,"Total gets: %zu\n", nget);
-    fprintf(stdout,"Total sets: %zu\n", nset);
+    fprintf(stdout, "Total gets: %zu\n", nget);
+    fprintf(stdout, "Total sets: %zu\n", nset);
     destroy_connection_pool();
 
     return 0;

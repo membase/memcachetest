@@ -34,38 +34,41 @@
 #if defined(HAVE_MACH_MACH_TIME_H)
 #include <mach/mach_time.h>
 
-hrtime_t gethrtime() {
-  static mach_timebase_info_data_t info = {0,0};
+hrtime_t gethrtime()
+{
+    static mach_timebase_info_data_t info = {0, 0};
 
-  /* Initialize once */
-  if (info.denom == 0) {
-      mach_timebase_info(&info);
-  }
+    /* Initialize once */
+    if (info.denom == 0) {
+        mach_timebase_info(&info);
+    }
 
-  return mach_absolute_time() * info.numer / info.denom;
+    return mach_absolute_time() * info.numer / info.denom;
 }
 
 /* Implementation using clock_gettime() with CLOCK_MONOTONIC */
 #elif defined(HAVE_CLOCK_GETTIME)
 
-hrtime_t gethrtime() {
-  hrtime_t ret;
-  struct timespec ts;
+hrtime_t gethrtime()
+{
+    hrtime_t ret;
+    struct timespec ts;
 
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
-    perror("clock_gettime");
-    return (-1ULL);
-  }
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
+        perror("clock_gettime");
+        return (-1ULL);
+    }
 
-  ret = ts.tv_sec * 1000000000;
-  ret += ts.tv_nsec;
+    ret = ts.tv_sec * 1000000000;
+    ret += ts.tv_nsec;
 
-  return ret;
+    return ret;
 }
 
 #else
 /* Unreliable fallback implementation using gettimeofday() */
-hrtime_t gethrtime() {
+hrtime_t gethrtime()
+{
     hrtime_t ret;
 
     struct timeval tv;

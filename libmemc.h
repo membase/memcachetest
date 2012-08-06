@@ -42,8 +42,8 @@ extern "C"  {
 
     enum Protocol { Binary = 1, Textual = 2 };
 
-    struct Memcache* libmemc_create(enum Protocol protocol);
-    void libmemc_destroy(struct Memcache* handle);
+    struct Memcache *libmemc_create(enum Protocol protocol);
+    void libmemc_destroy(struct Memcache *handle);
     int libmemc_add_server(struct Memcache *handle, const char *host,
                            in_port_t port);
     int libmemc_add(struct Memcache *handle, const struct Item *item);

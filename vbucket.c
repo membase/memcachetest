@@ -89,7 +89,8 @@ bool initialize_vbuckets(const char *location)
     return vbucket_handle != NULL;
 }
 
-uint16_t get_vbucket(const char *key, size_t nkey) {
+uint16_t get_vbucket(const char *key, size_t nkey)
+{
     if (vbucket_handle) {
         return vbucket_get_vbucket_by_key(vbucket_handle, key, nkey);
     }
@@ -103,7 +104,8 @@ bool initialize_vbuckets(const char *location)
     return false;
 }
 
-uint16_t get_vbucket(const char *key, size_t nkey) {
+uint16_t get_vbucket(const char *key, size_t nkey)
+{
     (void)key;
     (void)nkey;
     return 0;

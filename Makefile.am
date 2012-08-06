@@ -12,3 +12,23 @@ memcachetest_SOURCES = \
                        vbucket.c vbucket.h
 memcachetest_LDADD = $(LTLIBMEMCACHED) $(LTLIBVBUCKET) $(LTLIBCOUCHBASE) $(LTLIBEVENT)
 
+reformat:
+	astyle --mode=c \
+               --quiet \
+               --style=1tbs \
+               --indent=spaces=4 \
+               --indent-namespaces \
+               --indent-col1-comments \
+               --max-instatement-indent=78 \
+               --pad-oper \
+               --pad-header \
+               --add-brackets \
+               --unpad-paren \
+               --align-pointer=name \
+               --align-reference=name \
+               $(top_srcdir)/libmemc.[ch] \
+               $(top_srcdir)/main.c \
+               $(top_srcdir)/memcachetest.h \
+               $(top_srcdir)/metrics.[ch] \
+               $(top_srcdir)/timer.c \
+               $(top_srcdir)/vbucket.[ch]
