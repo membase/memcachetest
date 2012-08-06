@@ -678,20 +678,22 @@ static int binary_store(struct Server *server,
     }
 
     protocol_binary_request_set request = {
-        .message.header.request = {
-            .magic = PROTOCOL_BINARY_REQ,
-            .opcode = opcode,
-            .keylen = htons(keylen),
-            .extlen = 8,
-            .datatype = 0,
-            .vbucket = htons(get_vbucket(item->key, keylen)),
-            .bodylen = htonl(keylen + item->size + 8),
-            .opaque = 0,
-            .cas = swap64(item->cas_id)
-        },
-        .message.body = {
-            .flags = 0,
-            .expiration = htonl(item->exptime)
+        .message = {
+            .header.request = {
+                .magic = PROTOCOL_BINARY_REQ,
+                .opcode = opcode,
+                .keylen = htons(keylen),
+                .extlen = 8,
+                .datatype = 0,
+                .vbucket = htons(get_vbucket(item->key, keylen)),
+                .bodylen = htonl(keylen + item->size + 8),
+                .opaque = 0,
+                .cas = swap64(item->cas_id)
+            },
+            .body = {
+                .flags = 0,
+                .expiration = htonl(item->exptime)
+            }
         }
     };
 

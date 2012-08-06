@@ -203,6 +203,7 @@ static void get_callback(libcouchbase_t instance,
                          const void *bytes, size_t nbytes,
                          uint32_t flags, uint64_t cas)
 {
+    (void)instance;
     (void)key;
     (void)nkey;
     (void)flags;
@@ -448,7 +449,7 @@ static inline bool memcached_get_wrapper(struct connection *connection,
         libcouchbase_error_t e;
         struct libcouchbase_callback cb;
         char *keys[1];
-        keys[0] = key;
+        keys[0] = (void*)key;
         size_t nkeys[1];
         nkeys[0] = nkey;
 
@@ -903,6 +904,7 @@ static int get_server_rusage(const struct host *entry, struct rusage *rusage)
 
 static void exit_handler(int signum)
 {
+    (void)signum;
     long end_time = (int)time(NULL);
     long time_taken = end_time - start_time;
     long ops_sec = ((float)gets_count + sets_count) / time_taken;
