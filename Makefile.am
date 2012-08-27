@@ -10,7 +10,12 @@ memcachetest_SOURCES = \
                        metrics.c metrics.h \
                        timer.c \
                        vbucket.c vbucket.h
-memcachetest_LDADD = $(LTLIBMEMCACHED) $(LTLIBVBUCKET) $(LTLIBCOUCHBASE) $(LTLIBEVENT)
+
+memcachetest_LDADD =
+# Unfortunately I can't pass this variable through any of the AM_ flags..
+if ENABLE_GCOV
+memcachetest_LDADD += -lgcov
+endif
 
 reformat:
 	astyle --mode=c \
