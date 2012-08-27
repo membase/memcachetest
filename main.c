@@ -46,10 +46,6 @@
 #include "libmemcached/memcached.h"
 #endif
 
-#ifdef HAVE_LIBEVENT
-#include <event.h>
-#endif
-
 #ifdef HAVE_LIBCOUCHBASE
 #include <libcouchbase/couchbase.h>
 #endif
@@ -256,12 +252,6 @@ static void *create_memcached_handle(void)
 
 #ifdef HAVE_LIBCOUCHBASE
     case LIBCOUCHBASE: {
-        struct event_base *evbase = event_base_new();
-        if (evbase == NULL) {
-            fprintf(stderr, "Failed to create event base\n");
-            exit(1);
-        }
-
         char rest_server[1024];
         sprintf(rest_server, "%s:%d", hosts->hostname, hosts->port);
         libcouchbase_t instance = libcouchbase_create(rest_server,
@@ -269,13 +259,11 @@ static void *create_memcached_handle(void)
                                                       NULL);
         if (instance == NULL) {
             fprintf(stderr, "Failed to create libcouchbase instance\n");
-            event_base_free(evbase);
             exit(1);
         }
 
         if (libcouchbase_connect(instance) != LIBCOUCHBASE_SUCCESS) {
             fprintf(stderr, "Failed to connect libcouchbase instance to server\n");
-            event_base_free(evbase);
             exit(1);
         }
 
